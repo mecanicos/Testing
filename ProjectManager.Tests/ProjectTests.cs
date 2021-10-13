@@ -34,7 +34,7 @@ namespace ProjectManager.Tests {
 
             var project = new Project();
 
-            Assert.NotEqual(DateTime.MinValue, project.StartDate);
+            Assert.Equal(DateTime.Today.Date, project.StartDate.Date);
         }
 
         [Fact]
@@ -48,12 +48,26 @@ namespace ProjectManager.Tests {
             Assert.NotNull(project.Tasks.FirstOrDefault().Name);
         }
 
+        [Theory]
+        [InlineData("task")]
+        [InlineData("task ")]
+        [InlineData("TASK")]
+        [InlineData("TASK ")]
+        public void ThrowInvalidOperationExceptionIfTaskNameAlreadyExists(string taskName) {
+
+            var project = new Project();
+            var newTask1 = new ProjectTask("task");
+            project.AddTask(newTask1);
+            var newTask2 = new ProjectTask(taskName);
+            
+            Assert.Throws<InvalidOperationException>(() => project.AddTask(newTask2));
+        }
+
         [Fact]
-        public void Finish_ThrowExceptionIfAlmostOneTaskIsNotCompleted() {
+        public void Finish_ThrowInvalidOperationExceptionIfAtLeastOneTaskIsNotCompleted() {
 
             var project = new Project() {
                 Tasks = {
-                    new ProjectTask(""),
                     new ProjectTask(""),
                 }
             };
@@ -72,7 +86,7 @@ namespace ProjectManager.Tests {
 
             project.Finish();
 
-            Assert.NotNull(project.FinishDate);
+            Assert.Equal(DateTime.Today.Date, project.FinishDate.Value.Date);
         }
     }
 
@@ -162,8 +176,6 @@ namespace ProjectManager.Tests {
         }
     }
 
-    
-
     public class Project {
 
         public string Name { get; set; }
@@ -178,6 +190,9 @@ namespace ProjectManager.Tests {
         }
 
         public void AddTask(ProjectTask task) {
+            if(Tasks.Any(t=>t.Name.ToLower().Trim() == task.Name.ToLower().Trim())) {
+                throw new InvalidOperationException();
+            }
             Tasks.Add(task);
         }
 
